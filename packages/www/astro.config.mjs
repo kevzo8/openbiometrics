@@ -53,6 +53,12 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Guides',
+          items: [
+            { label: 'Face API Comparison', slug: 'guides/face-api-comparison' },
+          ],
+        },
+        {
           label: 'Self-Hosting',
           items: [
             { label: 'Docker', slug: 'self-hosting/docker' },
