@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 
 from app.deps import get_kernel
 from app.schemas import AdminHealthResponse, ModelStatusSchema
+from openbiometrics import __version__
 from openbiometrics.kernel import BiometricKernel
 
 router = APIRouter()
@@ -16,6 +17,7 @@ async def enhanced_health(kernel: BiometricKernel = Depends(get_kernel)):
     """Enhanced health check covering all modules."""
     status = kernel.health()
     return AdminHealthResponse(
+        version=__version__,
         healthy=status.healthy,
         modules=status.modules,
         details=status.details,

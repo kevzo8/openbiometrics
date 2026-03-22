@@ -1,6 +1,6 @@
 {
   "name": "openbiometrics",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "OpenBiometrics SDK — face recognition, liveness, and biometric verification for your apps",
   "type": "module",
   "main": "dist/index.cjs",

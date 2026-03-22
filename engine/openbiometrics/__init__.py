@@ -1,7 +1,13 @@
+from pathlib import Path
+
 from openbiometrics.config import BiometricConfig, FaceConfig
 from openbiometrics.core.pipeline import FacePipeline, PipelineConfig
 from openbiometrics.kernel import BiometricKernel
 from openbiometrics.runtime import ModelRegistry, OnnxModelSession
+
+# Single source of truth: /VERSION at repo root
+_VERSION_FILE = Path(__file__).parent.parent.parent / "VERSION"
+__version__ = _VERSION_FILE.read_text().strip() if _VERSION_FILE.exists() else "0.0.0-dev"
 
 __all__ = [
     "BiometricConfig",

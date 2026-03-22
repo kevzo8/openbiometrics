@@ -92,11 +92,14 @@ class FacePipeline:
             if liv_path.exists():
                 self._liveness = LivenessDetector(str(liv_path), ctx_id=ctx)
 
-        # Demographics
+        # Demographics — prefer ViT model (more accurate), fall back to InsightFace
         if self.config.enable_demographics:
-            dem_path = models / "genderage.onnx"
-            if dem_path.exists():
-                self._demographics = DemographicsEstimator(str(dem_path), ctx_id=ctx)
+            vit_path = models / "vit_genderage.onnx"
+            legacy_path = models / "genderage.onnx"
+            if vit_path.exists():
+                self._demographics = DemographicsEstimator(str(vit_path), ctx_id=ctx)
+            elif legacy_path.exists():
+                self._demographics = DemographicsEstimator(str(legacy_path), ctx_id=ctx)
 
     def process(self, image: np.ndarray) -> list[FaceResult]:
         """Process an image through the full pipeline.

@@ -35,6 +35,11 @@ from typing import Any
 import httpx
 
 
+def _version_tuple(v: str) -> tuple[int, ...]:
+    """Parse '0.3.0' into (0, 3, 0) for comparison."""
+    return tuple(int(x) for x in v.split(".") if x.isdigit())
+
+
 class OpenBiometrics:
     """OpenBiometrics API client."""
 
@@ -42,6 +47,7 @@ class OpenBiometrics:
         self,
         api_key: str,
         base_url: str = "https://api.openbiometrics.dev",
+        check_compatibility: bool = True,
     ):
         self._client = httpx.Client(
             base_url=base_url.rstrip("/") + "/api/v1",
@@ -55,6 +61,26 @@ class OpenBiometrics:
         self.video = _Video(self._client)
         self.events = _Events(self._client)
         self.admin = _Admin(self._client)
+
+        if check_compatibility:
+            self._check_api_version()
+
+    def _check_api_version(self) -> None:
+        """Warn if the API server version is below the minimum supported version."""
+        import warnings
+        from openbiometrics_sdk import MIN_API_VERSION, __version__
+
+        try:
+            health = self.admin.health()
+            server_version = health.get("version", "0.0.0")
+            if _version_tuple(server_version) < _version_tuple(MIN_API_VERSION):
+                warnings.warn(
+                    f"OpenBiometrics SDK v{__version__} requires API >= {MIN_API_VERSION}, "
+                    f"but server is {server_version}. Some features may not work.",
+                    stacklevel=2,
+                )
+        except Exception:
+            pass  # Don't fail client init if health check is unreachable
 
     def close(self) -> None:
         self._client.close()

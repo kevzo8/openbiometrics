@@ -1,4 +1,5 @@
 export { OpenBiometrics } from './client';
+export { VERSION } from './version';
 export type {
   Face,
   FaceDetection,

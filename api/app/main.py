@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app import deps
 from app.routes import router as api_router
+from openbiometrics import __version__
 from openbiometrics.config import (
     BiometricConfig,
     DocumentConfig,
@@ -82,7 +83,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="OpenBiometrics",
     description="Open-source biometric platform -- face detection, recognition, liveness, quality",
-    version="0.3.0",
+    version=__version__,
     lifespan=lifespan,
 )
 
@@ -91,10 +92,11 @@ app = FastAPI(
 
 @app.middleware("http")
 async def audit_log_middleware(request: Request, call_next):
-    """Log every request with method, path, status code, and duration."""
+    """Log every request with method, path, status code, duration, and version header."""
     start = time.monotonic()
     response = await call_next(request)
     duration_ms = (time.monotonic() - start) * 1000
+    response.headers["X-OpenBiometrics-Version"] = __version__
     logger.info(
         "%s %s -> %d (%.1fms)",
         request.method,

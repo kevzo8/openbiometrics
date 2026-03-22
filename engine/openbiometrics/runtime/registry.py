@@ -48,8 +48,15 @@ _MODEL_CATALOG: dict[str, ModelInfo] = {
         name="genderage",
         filename="genderage.onnx",
         url="https://huggingface.co/openbiometrics/models/resolve/main/genderage.onnx",
-        description="InsightFace age and gender estimation model",
+        description="InsightFace age and gender estimation model (legacy, lower accuracy)",
         size_mb=1.3,
+    ),
+    "vit_genderage": ModelInfo(
+        name="vit_genderage",
+        filename="vit_genderage.onnx",
+        url="https://huggingface.co/onnx-community/age-gender-prediction-ONNX/resolve/main/onnx/model.onnx",
+        description="ViT-base age/gender model — 94.3% gender acc, 4.5yr age MAE (Apache 2.0)",
+        size_mb=330.0,
     ),
     "antispoofing": ModelInfo(
         name="antispoofing",

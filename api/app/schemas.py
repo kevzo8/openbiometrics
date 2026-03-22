@@ -77,6 +77,7 @@ class IdentifyResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
+    version: str
     models_loaded: bool
     watchlist_count: int
 
@@ -197,6 +198,7 @@ class EventSchema(BaseModel):
 # ── Admin schemas ────────────────────────────────────────────────────────────
 
 class AdminHealthResponse(BaseModel):
+    version: str
     healthy: bool
     modules: dict[str, bool]
     details: dict[str, str]
