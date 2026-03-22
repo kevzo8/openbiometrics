@@ -159,8 +159,11 @@ async def health_check(kernel: BiometricKernel = Depends(get_kernel)):
 
     watchlist_mgr = WatchlistManager(storage_dir="./watchlists")
     wl_count = sum(watchlist_mgr.get(n).size for n in watchlist_mgr.list_watchlists())
+    from openbiometrics import __version__
+
     return HealthResponse(
         status="ok",
+        version=__version__,
         models_loaded=kernel.face._detector is not None,
         watchlist_count=wl_count,
     )

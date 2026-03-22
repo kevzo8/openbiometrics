@@ -7,14 +7,18 @@ interface ExtendedHealth extends HealthResponse {
   recent_events?: number;
 }
 
-export function StatusBar() {
+export function StatusBar({ onVersion }: { onVersion?: (v: string) => void }) {
   const [health, setHealth] = useState<ExtendedHealth | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     const check = () =>
       getHealth()
-        .then((h) => { setHealth(h as ExtendedHealth); setError(false); })
+        .then((h) => {
+          setHealth(h as ExtendedHealth);
+          setError(false);
+          if (onVersion && (h as Record<string, unknown>).version) onVersion((h as Record<string, unknown>).version as string);
+        })
         .catch(() => setError(true));
 
     check();

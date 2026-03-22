@@ -24,6 +24,7 @@ const TAB_LABELS: Record<Tab, string> = {
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('detect');
+  const [version, setVersion] = useState<string | null>(null);
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -34,9 +35,9 @@ export default function App() {
               OB
             </div>
             <h1 className="text-xl font-semibold tracking-tight">OpenBiometrics</h1>
-            <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full">v0.1</span>
+            {version && <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full">v{version}</span>}
           </div>
-          <StatusBar />
+          <StatusBar onVersion={setVersion} />
         </div>
         <nav className="max-w-6xl mx-auto px-6 flex gap-1 overflow-x-auto">
           {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (

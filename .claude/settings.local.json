@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__search-console__list_sites",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"Fix: pass claude_code_oauth_token to all agent workflows:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
