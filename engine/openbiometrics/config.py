@@ -14,8 +14,18 @@ from dataclasses import dataclass, field
 class FaceConfig:
     """Configuration for face processing (detection, recognition, liveness, demographics).
 
-    Absorbs all fields from the original PipelineConfig so existing
-    FacePipeline usage continues to work.
+    Model selection: specify model names from the registry, or leave as "auto"
+    to use the best available model (prefers community tier, falls back to legacy).
+
+    Tiers:
+      - community: open-source, commercial use OK (default)
+      - premium: highest accuracy, requires license key
+      - legacy: non-commercial InsightFace models
+
+    Example:
+        FaceConfig(detector="yunet", recognizer="sface")           # community
+        FaceConfig(detector="det_10g", recognizer="w600k_r50")     # legacy
+        FaceConfig(detector="auto", recognizer="auto")             # best available
     """
 
     models_dir: str = "./models"
@@ -27,6 +37,11 @@ class FaceConfig:
     enable_demographics: bool = True
     enable_quality: bool = True
     quality_gate: bool = False  # Skip recognition if quality fails
+
+    # Model selection — "auto" picks the best available model on disk
+    detector: str = "auto"  # yunet (community) | det_10g (legacy) | auto
+    recognizer: str = "auto"  # sface (community) | w600k_r50 (legacy) | auto
+    demographics_model: str = "auto"  # vit_genderage (community) | genderage (legacy) | auto
 
 
 @dataclass

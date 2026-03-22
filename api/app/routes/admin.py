@@ -5,9 +5,10 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from app.deps import get_kernel
-from app.schemas import AdminHealthResponse, ModelStatusSchema
+from app.schemas import AdminHealthResponse, LoadedModelInfo, ModelStatusSchema
 from openbiometrics import __version__
 from openbiometrics.kernel import BiometricKernel
+from openbiometrics.runtime.registry import _MODEL_CATALOG
 
 router = APIRouter()
 
@@ -16,10 +17,26 @@ router = APIRouter()
 async def enhanced_health(kernel: BiometricKernel = Depends(get_kernel)):
     """Enhanced health check covering all modules."""
     status = kernel.health()
+
+    # Build model tier info from loaded models
+    loaded_models: dict[str, LoadedModelInfo] = {}
+    if kernel.face is not None:
+        for role, model_name in kernel.face.loaded_models.items():
+            info = _MODEL_CATALOG.get(model_name)
+            if info:
+                loaded_models[role] = LoadedModelInfo(
+                    name=info.name, tier=info.tier, license=info.license
+                )
+            else:
+                loaded_models[role] = LoadedModelInfo(
+                    name=model_name, tier="unknown", license="unknown"
+                )
+
     return AdminHealthResponse(
         version=__version__,
         healthy=status.healthy,
         modules=status.modules,
+        models=loaded_models,
         details=status.details,
     )
 

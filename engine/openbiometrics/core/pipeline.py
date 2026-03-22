@@ -73,16 +73,22 @@ class FacePipeline:
         models = Path(self.config.models_dir)
         ctx = self.config.ctx_id
 
-        # Detector — prefer YuNet (MIT), fall back to SCRFD (non-commercial)
-        yunet_path = models / "yunet.onnx"
-        if yunet_path.exists():
+        # Detector
+        det_path = self._resolve_model(
+            self.config.detector,
+            role="detector",
+            preferences=["yunet", "det_10g"],
+            models_dir=models,
+        )
+        if det_path:
             self._detector = FaceDetector(
-                model_path=str(yunet_path),
+                model_path=str(det_path),
                 ctx_id=ctx,
                 det_thresh=self.config.det_thresh,
                 det_size=self.config.det_size,
             )
         else:
+            # Ultimate fallback: InsightFace FaceAnalysis (requires insightface package)
             self._detector = FaceDetector(
                 model_name="buffalo_l",
                 ctx_id=ctx,
@@ -90,13 +96,15 @@ class FacePipeline:
                 det_size=self.config.det_size,
             )
 
-        # Recognizer — prefer SFace (Apache 2.0), fall back to ArcFace (non-commercial)
-        sface_path = models / "sface.onnx"
-        arcface_path = models / "w600k_r50.onnx"
-        if sface_path.exists():
-            self._recognizer = FaceRecognizer(str(sface_path), ctx_id=ctx)
-        elif arcface_path.exists():
-            self._recognizer = FaceRecognizer(str(arcface_path), ctx_id=ctx)
+        # Recognizer
+        rec_path = self._resolve_model(
+            self.config.recognizer,
+            role="recognizer",
+            preferences=["sface", "w600k_r50"],
+            models_dir=models,
+        )
+        if rec_path:
+            self._recognizer = FaceRecognizer(str(rec_path), ctx_id=ctx)
 
         # Liveness
         if self.config.enable_liveness:
@@ -104,14 +112,72 @@ class FacePipeline:
             if liv_path.exists():
                 self._liveness = LivenessDetector(str(liv_path), ctx_id=ctx)
 
-        # Demographics — prefer ViT model (more accurate), fall back to InsightFace
+        # Demographics
         if self.config.enable_demographics:
-            vit_path = models / "vit_genderage.onnx"
-            legacy_path = models / "genderage.onnx"
-            if vit_path.exists():
-                self._demographics = DemographicsEstimator(str(vit_path), ctx_id=ctx)
-            elif legacy_path.exists():
-                self._demographics = DemographicsEstimator(str(legacy_path), ctx_id=ctx)
+            dem_path = self._resolve_model(
+                self.config.demographics_model,
+                role="demographics",
+                preferences=["vit_genderage", "genderage"],
+                models_dir=models,
+            )
+            if dem_path:
+                self._demographics = DemographicsEstimator(str(dem_path), ctx_id=ctx)
+
+    @property
+    def loaded_models(self) -> dict[str, str]:
+        """Return a map of role -> loaded model filename for health reporting."""
+        result: dict[str, str] = {}
+        if self._detector is not None:
+            if self._detector._yunet is not None:
+                result["detector"] = "yunet"
+            elif self._detector._insightface_app is not None:
+                result["detector"] = "det_10g"
+        if self._recognizer is not None:
+            result["recognizer"] = getattr(self._recognizer, "_model", None) and \
+                Path(self._recognizer._model._model_path).stem or "unknown"
+        if self._demographics is not None:
+            result["demographics"] = Path(self._demographics._model._model_path).stem
+        if self._liveness is not None:
+            result["liveness"] = "antispoofing"
+        return result
+
+    @staticmethod
+    def _resolve_model(
+        selection: str,
+        role: str,
+        preferences: list[str],
+        models_dir: Path,
+    ) -> Path | None:
+        """Resolve a model selection to a file path.
+
+        Args:
+            selection: Model name or "auto"
+            role: Functional role (for auto-resolution)
+            preferences: Ordered list of model names to try in auto mode
+            models_dir: Directory containing model files
+        """
+        from openbiometrics.runtime.registry import _MODEL_CATALOG
+
+        if selection != "auto":
+            info = _MODEL_CATALOG.get(selection)
+            if info:
+                path = models_dir / info.filename
+                if path.exists():
+                    return path
+            # Direct filename fallback
+            direct = models_dir / f"{selection}.onnx"
+            if direct.exists():
+                return direct
+            return None
+
+        # Auto: try preferences in order
+        for name in preferences:
+            info = _MODEL_CATALOG.get(name)
+            if info:
+                path = models_dir / info.filename
+                if path.exists():
+                    return path
+        return None
 
     def process(self, image: np.ndarray) -> list[FaceResult]:
         """Process an image through the full pipeline.

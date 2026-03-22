@@ -197,10 +197,17 @@ class EventSchema(BaseModel):
 
 # ── Admin schemas ────────────────────────────────────────────────────────────
 
+class LoadedModelInfo(BaseModel):
+    name: str
+    tier: str  # community | premium | legacy
+    license: str
+
+
 class AdminHealthResponse(BaseModel):
     version: str
     healthy: bool
     modules: dict[str, bool]
+    models: dict[str, LoadedModelInfo] = {}
     details: dict[str, str]
 
 

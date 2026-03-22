@@ -16,6 +16,14 @@ logger = logging.getLogger(__name__)
 _DEFAULT_MODELS_DIR = Path("./models")
 
 
+class ModelTier:
+    """Model licensing tiers."""
+
+    COMMUNITY = "community"  # Fully open, commercial use OK
+    PREMIUM = "premium"  # Requires API key / license, highest accuracy
+    LEGACY = "legacy"  # Non-commercial, kept for backward compatibility
+
+
 @dataclass(frozen=True)
 class ModelInfo:
     """Metadata for a registered model."""
@@ -25,73 +33,110 @@ class ModelInfo:
     url: str
     description: str
     size_mb: float  # Approximate size in megabytes
+    tier: str = ModelTier.COMMUNITY
+    license: str = "MIT"
+    role: str = ""  # functional role: detector, recognizer, demographics, liveness, etc.
 
 
 # Model catalog — covers current and planned models.
-# URLs point to publicly hosted ONNX files (InsightFace, GitHub releases, etc.)
+# URLs point to publicly hosted ONNX files (OpenCV Zoo, HuggingFace, etc.)
 _MODEL_CATALOG: dict[str, ModelInfo] = {
+    # ── Community tier (open license, default) ─────────────────────────
     "yunet": ModelInfo(
         name="yunet",
         filename="yunet.onnx",
         url="https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx",
-        description="YuNet face detector — MIT license, 75K params, 0.88 AP WIDER Face",
+        description="YuNet face detector — 75K params, 0.88 AP WIDER Face",
         size_mb=0.3,
+        tier=ModelTier.COMMUNITY,
+        license="MIT",
+        role="detector",
     ),
     "sface": ModelInfo(
         name="sface",
         filename="sface.onnx",
         url="https://github.com/opencv/opencv_zoo/raw/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx",
-        description="SFace face recognition — Apache 2.0, 99.4% LFW, MobileFaceNet",
+        description="SFace face recognition — 99.4% LFW, MobileFaceNet",
         size_mb=37.0,
-    ),
-    "det_10g": ModelInfo(
-        name="det_10g",
-        filename="det_10g.onnx",
-        url="https://huggingface.co/openbiometrics/models/resolve/main/det_10g.onnx",
-        description="SCRFD 10G face detector (legacy, non-commercial InsightFace license)",
-        size_mb=16.1,
-    ),
-    "w600k_r50": ModelInfo(
-        name="w600k_r50",
-        filename="w600k_r50.onnx",
-        url="https://huggingface.co/openbiometrics/models/resolve/main/w600k_r50.onnx",
-        description="ArcFace ResNet-50 face recognition (legacy, non-commercial InsightFace license)",
-        size_mb=166.0,
-    ),
-    "genderage": ModelInfo(
-        name="genderage",
-        filename="genderage.onnx",
-        url="https://huggingface.co/openbiometrics/models/resolve/main/genderage.onnx",
-        description="InsightFace age and gender estimation model (legacy, lower accuracy)",
-        size_mb=1.3,
+        tier=ModelTier.COMMUNITY,
+        license="Apache-2.0",
+        role="recognizer",
     ),
     "vit_genderage": ModelInfo(
         name="vit_genderage",
         filename="vit_genderage.onnx",
         url="https://huggingface.co/onnx-community/age-gender-prediction-ONNX/resolve/main/onnx/model.onnx",
-        description="ViT-base age/gender model — 94.3% gender acc, 4.5yr age MAE (Apache 2.0)",
+        description="ViT-base age/gender — 94.3% gender acc, 4.5yr age MAE",
         size_mb=330.0,
+        tier=ModelTier.COMMUNITY,
+        license="Apache-2.0",
+        role="demographics",
     ),
     "antispoofing": ModelInfo(
         name="antispoofing",
         filename="antispoofing.onnx",
         url="https://huggingface.co/openbiometrics/models/resolve/main/antispoofing.onnx",
-        description="MiniFASNet passive liveness / anti-spoofing model",
+        description="MiniFASNet passive liveness / anti-spoofing",
         size_mb=2.0,
+        tier=ModelTier.COMMUNITY,
+        license="Apache-2.0",
+        role="liveness",
     ),
     "yolov8n": ModelInfo(
         name="yolov8n",
         filename="yolov8n.onnx",
         url="https://huggingface.co/openbiometrics/models/resolve/main/yolov8n.onnx",
-        description="YOLOv8 nano for person/object detection (Phase 2)",
+        description="YOLOv8 nano for person/object detection",
         size_mb=12.0,
+        tier=ModelTier.COMMUNITY,
+        license="AGPL-3.0",
+        role="person_detector",
     ),
     "face_mesh": ModelInfo(
         name="face_mesh",
         filename="face_mesh.onnx",
         url="https://huggingface.co/openbiometrics/models/resolve/main/face_mesh.onnx",
-        description="MediaPipe face mesh 468-point landmark model (Phase 2)",
+        description="MediaPipe face mesh 468-point landmarks",
         size_mb=2.8,
+        tier=ModelTier.COMMUNITY,
+        license="Apache-2.0",
+        role="landmarks",
+    ),
+    # ── Premium tier (highest accuracy, requires license key) ──────────
+    # These are placeholders — actual premium models would be hosted on
+    # a private registry and require authentication to download.
+    # Partners (e.g. Innovatrics) can register their own models here.
+
+    # ── Legacy tier (non-commercial, kept for backward compat) ─────────
+    "det_10g": ModelInfo(
+        name="det_10g",
+        filename="det_10g.onnx",
+        url="https://huggingface.co/openbiometrics/models/resolve/main/det_10g.onnx",
+        description="SCRFD 10G face detector (InsightFace, non-commercial)",
+        size_mb=16.1,
+        tier=ModelTier.LEGACY,
+        license="non-commercial",
+        role="detector",
+    ),
+    "w600k_r50": ModelInfo(
+        name="w600k_r50",
+        filename="w600k_r50.onnx",
+        url="https://huggingface.co/openbiometrics/models/resolve/main/w600k_r50.onnx",
+        description="ArcFace ResNet-50 face recognition (InsightFace, non-commercial)",
+        size_mb=166.0,
+        tier=ModelTier.LEGACY,
+        license="non-commercial",
+        role="recognizer",
+    ),
+    "genderage": ModelInfo(
+        name="genderage",
+        filename="genderage.onnx",
+        url="https://huggingface.co/openbiometrics/models/resolve/main/genderage.onnx",
+        description="InsightFace age/gender (non-commercial, lower accuracy)",
+        size_mb=1.3,
+        tier=ModelTier.LEGACY,
+        license="non-commercial",
+        role="demographics",
     ),
 }
 
