@@ -73,18 +73,30 @@ class FacePipeline:
         models = Path(self.config.models_dir)
         ctx = self.config.ctx_id
 
-        # Detector (uses InsightFace model pack)
-        self._detector = FaceDetector(
-            model_name="buffalo_l",
-            ctx_id=ctx,
-            det_thresh=self.config.det_thresh,
-            det_size=self.config.det_size,
-        )
+        # Detector — prefer YuNet (MIT), fall back to SCRFD (non-commercial)
+        yunet_path = models / "yunet.onnx"
+        if yunet_path.exists():
+            self._detector = FaceDetector(
+                model_path=str(yunet_path),
+                ctx_id=ctx,
+                det_thresh=self.config.det_thresh,
+                det_size=self.config.det_size,
+            )
+        else:
+            self._detector = FaceDetector(
+                model_name="buffalo_l",
+                ctx_id=ctx,
+                det_thresh=self.config.det_thresh,
+                det_size=self.config.det_size,
+            )
 
-        # Recognizer
-        rec_path = models / "w600k_r50.onnx"
-        if rec_path.exists():
-            self._recognizer = FaceRecognizer(str(rec_path), ctx_id=ctx)
+        # Recognizer — prefer SFace (Apache 2.0), fall back to ArcFace (non-commercial)
+        sface_path = models / "sface.onnx"
+        arcface_path = models / "w600k_r50.onnx"
+        if sface_path.exists():
+            self._recognizer = FaceRecognizer(str(sface_path), ctx_id=ctx)
+        elif arcface_path.exists():
+            self._recognizer = FaceRecognizer(str(arcface_path), ctx_id=ctx)
 
         # Liveness
         if self.config.enable_liveness:

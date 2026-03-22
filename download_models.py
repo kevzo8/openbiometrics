@@ -22,7 +22,7 @@ from openbiometrics.runtime.registry import ModelRegistry
 
 # Which models belong to each module
 _MODULE_MODELS: dict[str, list[str]] = {
-    "face": ["det_10g", "w600k_r50", "vit_genderage", "antispoofing"],
+    "face": ["yunet", "sface", "vit_genderage", "antispoofing"],
     "document": ["face_mesh"],
     "person": ["yolov8n"],
 }

@@ -1,18 +1,20 @@
-"""Face recognition using ArcFace embedding models.
+"""Face recognition embedding extraction.
 
-Extracts 512-dimensional face embeddings for comparison.
-Models available via InsightFace model zoo:
-- buffalo_l: w600k_r50 (best accuracy, ~99.86% LFW)
-- buffalo_s: w600k_mbf (mobile/edge, ~99.5% LFW)
+Supports two backends (auto-detected from model input shape):
+- SFace (OpenCV Zoo): Apache 2.0, 99.4% LFW, MobileFaceNet architecture (default)
+- ArcFace (InsightFace): higher accuracy but non-commercial license (legacy)
+
+Both produce L2-normalized embeddings compatible with cosine similarity.
 """
 
+import cv2
 import numpy as np
 
 from openbiometrics.runtime.session import OnnxModelSession
 
 
 class FaceRecognizer:
-    """ArcFace-based face embedding extractor."""
+    """Face embedding extractor supporting SFace and ArcFace models."""
 
     def __init__(self, model_path: str, ctx_id: int = 0):
         """
@@ -25,19 +27,29 @@ class FaceRecognizer:
         self.input_name = self._model.input_name
         self.input_shape = self._model.input_shape  # e.g. [1, 3, 112, 112]
 
+        # Auto-detect: SFace outputs 2 tensors (features + ?), ArcFace outputs 1
+        output_count = len(self.session.get_outputs())
+        self._is_sface = output_count >= 2
+
     def get_embedding(self, aligned_face: np.ndarray) -> np.ndarray:
-        """Extract 512-d embedding from a 112x112 aligned face.
+        """Extract normalized embedding from a 112x112 aligned face.
 
         Args:
             aligned_face: BGR 112x112 aligned face image
 
         Returns:
-            Normalized 512-d float32 embedding
+            Normalized float32 embedding vector
         """
         blob = _preprocess(aligned_face)
-        embedding = self._model.run(blob)[0][0]
+        outputs = self._model.run(blob)
+
+        # SFace: first output is the embedding
+        embedding = outputs[0][0]
+
         # L2 normalize
-        embedding = embedding / np.linalg.norm(embedding)
+        norm = np.linalg.norm(embedding)
+        if norm > 0:
+            embedding = embedding / norm
         return embedding.astype(np.float32)
 
     def get_embeddings_batch(self, aligned_faces: list[np.ndarray]) -> list[np.ndarray]:
@@ -48,6 +60,7 @@ class FaceRecognizer:
         embeddings = self._model.run(batch)[0]
         # L2 normalize each
         norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+        norms = np.maximum(norms, 1e-10)
         embeddings = embeddings / norms
         return [e.astype(np.float32) for e in embeddings]
 
@@ -60,14 +73,14 @@ class FaceRecognizer:
     def compare_to_threshold(similarity: float, threshold: float = 0.4) -> bool:
         """Check if similarity exceeds verification threshold.
 
-        Default threshold 0.4 corresponds to ~FAR=1e-6 for ArcFace r50.
+        Default threshold 0.4 works for both SFace and ArcFace models.
         Adjust based on your security requirements.
         """
         return similarity >= threshold
 
 
 def _preprocess(aligned_face: np.ndarray) -> np.ndarray:
-    """Preprocess aligned face for ArcFace inference.
+    """Preprocess aligned face for inference.
 
     Args:
         aligned_face: BGR uint8 [112, 112, 3]
@@ -76,9 +89,7 @@ def _preprocess(aligned_face: np.ndarray) -> np.ndarray:
         Float32 blob [1, 3, 112, 112], normalized to [-1, 1]
     """
     img = aligned_face.astype(np.float32)
-    # BGR -> RGB
-    img = img[:, :, ::-1]
-    # Normalize to [-1, 1] (standard for ArcFace)
+    # Normalize to [-1, 1]
     img = (img - 127.5) / 127.5
     # HWC -> CHW -> NCHW
     img = img.transpose(2, 0, 1)[np.newaxis, ...]

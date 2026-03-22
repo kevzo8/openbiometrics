@@ -4,7 +4,6 @@ dynamic = ["version"]
 description = "Open-source biometric engine — face detection, recognition, liveness, quality, demographics"
 requires-python = ">=3.10"
 dependencies = [
-    "insightface>=0.7.3",
     "onnxruntime>=1.18",
     "opencv-python-headless>=4.10",
     "numpy>=1.26",
@@ -14,6 +13,7 @@ dependencies = [
 
 [project.optional-dependencies]
 gpu = ["onnxruntime-gpu>=1.18"]
+legacy = ["insightface>=0.7.3"]
 document = ["python-doctr[torch]>=0.9"]
 person = ["ultralytics>=8.2"]
 liveness = ["mediapipe>=0.10"]

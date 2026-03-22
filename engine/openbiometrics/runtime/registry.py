@@ -30,18 +30,32 @@ class ModelInfo:
 # Model catalog — covers current and planned models.
 # URLs point to publicly hosted ONNX files (InsightFace, GitHub releases, etc.)
 _MODEL_CATALOG: dict[str, ModelInfo] = {
+    "yunet": ModelInfo(
+        name="yunet",
+        filename="yunet.onnx",
+        url="https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx",
+        description="YuNet face detector — MIT license, 75K params, 0.88 AP WIDER Face",
+        size_mb=0.3,
+    ),
+    "sface": ModelInfo(
+        name="sface",
+        filename="sface.onnx",
+        url="https://github.com/opencv/opencv_zoo/raw/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx",
+        description="SFace face recognition — Apache 2.0, 99.4% LFW, MobileFaceNet",
+        size_mb=37.0,
+    ),
     "det_10g": ModelInfo(
         name="det_10g",
         filename="det_10g.onnx",
         url="https://huggingface.co/openbiometrics/models/resolve/main/det_10g.onnx",
-        description="SCRFD 10G face detector (highest accuracy, server deployment)",
+        description="SCRFD 10G face detector (legacy, non-commercial InsightFace license)",
         size_mb=16.1,
     ),
     "w600k_r50": ModelInfo(
         name="w600k_r50",
         filename="w600k_r50.onnx",
         url="https://huggingface.co/openbiometrics/models/resolve/main/w600k_r50.onnx",
-        description="ArcFace ResNet-50 face recognition (~99.86% LFW)",
+        description="ArcFace ResNet-50 face recognition (legacy, non-commercial InsightFace license)",
         size_mb=166.0,
     ),
     "genderage": ModelInfo(
