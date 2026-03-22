@@ -28,6 +28,23 @@ Challenge-response liveness detection that requires the user to perform specific
 
 Challenges are randomly selected when a session is created. The number of challenges is configurable (default: 3).
 
+## Presets
+
+Use presets for common liveness configurations instead of configuring challenges manually:
+
+```
+GET /api/v1/liveness/presets
+```
+
+| Preset | Challenges | Security | Best For |
+|--------|-----------|----------|----------|
+| `eye` | Blink x2 | Low | Quick re-authentication |
+| `smile` | Smile x1 | Low | Natural UX onboarding |
+| `multi_range` | Blink + head turns x4 | High | KYC, financial services |
+| `head_turn` | Left + right x2 | Medium | Balanced security/UX |
+| `full` | All types, randomized x4 | Highest | High-value transactions |
+| `passive_only` | None (use passive liveness endpoint instead) | Lowest | Zero-friction |
+
 ## Create a Session
 
 ```
@@ -36,11 +53,16 @@ POST /api/v1/liveness/sessions
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `num_challenges` | int | No | Number of challenges (default: 3) |
-| `timeout_seconds` | float | No | Seconds per challenge (default: 5.0) |
+| `preset` | string | No | Preset name (`eye`, `smile`, `multi_range`, `head_turn`, `full`) |
+| `num_challenges` | int | No | Number of challenges — ignored if preset is set (default: 3) |
+| `timeout_seconds` | float | No | Seconds per challenge — ignored if preset is set (default: 5.0) |
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/liveness/sessions?num_challenges=3&timeout_seconds=5.0" \
+# Using a preset (recommended)
+curl -X POST "http://localhost:8000/api/v1/liveness/sessions?preset=smile"
+
+# Custom configuration
+curl -X POST "http://localhost:8000/api/v1/liveness/sessions?num_challenges=3&timeout_seconds=5.0"
 ```
 
 ```json

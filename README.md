@@ -2,46 +2,90 @@
 
 Open-source biometric platform for developers. Face recognition, document processing, liveness detection, video analytics, and identity verification — as simple as an API call.
 
-**[Documentation](https://drinkredwine.github.io/openbiometrics/)** | **[Quickstart](https://drinkredwine.github.io/openbiometrics/quickstart/)** | **[API Reference](https://drinkredwine.github.io/openbiometrics/api/face-detection/)**
+**[Documentation](https://docs.openbiometrics.dev)** | **[Demo](https://demo.openbiometrics.dev)** | **[API Reference](https://docs.openbiometrics.dev/api/face-detection/)**
 
 ## Features
 
-- **Face Detection** — SCRFD detector with quality scoring, landmarks, demographics
-- **Face Recognition** — ArcFace embeddings (99.86% LFW), 1:1 verification and 1:N identification
+- **Face Detection** — YuNet detector with quality scoring, landmarks, demographics
+- **Face Recognition** — SFace embeddings (99.4% LFW), 1:1 verification and 1:N identification
 - **Passive Liveness** — MiniFASNet anti-spoofing, no user interaction
-- **Active Liveness** — Challenge-response with 7 action types and presets (blink, smile, head turn)
+- **Active Liveness** — 6 presets (eye, smile, multi-range, head-turn, full, passive-only)
 - **Document Processing** — MRZ parsing (ICAO 9303), OCR, document detection for passports/IDs
 - **Video Analytics** — Multi-camera management with real-time face processing
 - **Events & Webhooks** — Event bus with HMAC-signed webhook delivery
 - **Watchlists** — FAISS-powered similarity search, identity resolution, deduplication
-- **Edge Ready** — Docker, Jetson, ARM via ONNX Runtime / TensorRT / NCNN
+- **Edge Ready** — Docker, Jetson, ARM via ONNX Runtime / TensorRT
 
 ## Quick Start
 
 ```bash
-# Clone and install
-git clone https://github.com/drinkredwine/openbiometrics
-cd openbiometrics
-cd engine && pip install -e . && python download_models.py
-cd ../api && uvicorn app.main:app --port 8000
+git clone https://github.com/openbm/openbiometrics && cd openbiometrics
+cd engine && pip install -e . && cd ..
+python download_models.py --module face
+cd api && uvicorn app.main:app --port 8000
 ```
 
 ```bash
-# Detect faces
 curl -X POST http://localhost:8000/api/v1/detect -F "image=@photo.jpg"
 ```
 
+## Models & Licensing
+
+All default models are **fully open-source** (MIT / Apache 2.0). No commercial restrictions.
+
+| Model | License | Size | Purpose | Accuracy |
+|-------|---------|------|---------|----------|
+| YuNet | MIT | 0.3 MB | Face detection | 0.88 AP (WIDER Face) |
+| SFace | Apache 2.0 | 37 MB | Face recognition | 99.4% (LFW) |
+| ViT GenderAge | Apache 2.0 | 330 MB | Age & gender | 94.3% gender, 4.5yr MAE |
+| MiniFASNet | Apache 2.0 | 2 MB | Passive liveness | ~98% |
+| YOLOv8n | AGPL-3.0 | 12 MB | Person detection | — |
+| Face Mesh | Apache 2.0 | 2.8 MB | Active liveness | — |
+
+### Model Tiers
+
+OpenBiometrics supports three model tiers — check what's loaded via `GET /api/v1/admin/health`:
+
+- **Community** — open-source models, commercial use OK, no restrictions (default)
+- **Premium** — highest accuracy models from partners, requires license key
+- **Legacy** — InsightFace models (non-commercial), kept for backward compatibility
+
+```python
+# Choose your models explicitly
+FaceConfig(detector="yunet", recognizer="sface")           # community (default)
+FaceConfig(detector="det_10g", recognizer="w600k_r50")     # legacy (non-commercial)
+```
+
+## Liveness Presets
+
+Pre-configured liveness modes matching industry standards:
+
+```bash
+# Create session with a preset
+curl -X POST "http://localhost:8000/api/v1/liveness/sessions?preset=smile"
+
+# List all presets
+curl http://localhost:8000/api/v1/liveness/presets
+```
+
+| Preset | Challenges | Use Case |
+|--------|-----------|----------|
+| `eye` | Blink x2 | Low-friction re-auth |
+| `smile` | Smile x1 | Natural UX onboarding |
+| `multi_range` | Blink + head turns x4 | High-security KYC |
+| `head_turn` | Left + right x2 | Balanced security/UX |
+| `full` | All types, randomized x4 | Maximum security |
+| `passive_only` | None (MiniFASNet only) | Zero-friction |
+
 ## SDKs
 
-### Node.js
+### Node.js / TypeScript
 ```ts
 import { OpenBiometrics } from 'openbiometrics';
 
 const ob = new OpenBiometrics({ apiKey: 'any', baseUrl: 'http://localhost:8000' });
 const { faces } = await ob.faces.detect(photoBuffer);
 const { is_match } = await ob.faces.verify(id, selfie);
-await ob.watchlists.enroll(photo, { label: 'Alice' });
-const { matches } = await ob.watchlists.identify(unknown);
 ```
 
 ### Python
@@ -51,14 +95,13 @@ from openbiometrics_sdk import OpenBiometrics
 ob = OpenBiometrics(api_key="any", base_url="http://localhost:8000")
 result = ob.faces.detect("photo.jpg")
 result = ob.faces.verify("id.jpg", "selfie.jpg")
-ob.watchlists.enroll("photo.jpg", label="Alice")
-result = ob.watchlists.identify("unknown.jpg")
 ```
 
 ## Project Structure
 
 ```
 openbiometrics/
+├── VERSION              # Single source of truth for engine version
 ├── engine/              # Core biometric engine (Python)
 │   └── openbiometrics/  # Face, documents, liveness, video, events, identity
 ├── api/                 # FastAPI REST server
@@ -73,14 +116,13 @@ openbiometrics/
 │   └── sample-surveillance/   # Surveillance dashboard demo
 ├── sdks/
 │   └── python/          # Python SDK (pip install openbiometrics)
-└── tests/
+└── docs/                # Versioning strategy, architecture docs
 ```
 
 ## Development
 
 ```bash
-# Run all services (API + dashboard + docs)
-mprocs --config mprocs.yaml
+mprocs --config mprocs.yaml   # Run all services
 ```
 
 | Service | URL |
@@ -89,18 +131,11 @@ mprocs --config mprocs.yaml
 | Dashboard | http://localhost:3600 |
 | Docs | http://localhost:4000 |
 
-## Models
+## Version
 
-The engine uses ONNX models from InsightFace:
+Current: **0.3.0** — check at runtime via `GET /api/v1/admin/health` or `X-OpenBiometrics-Version` response header.
 
-| Model | Size | Purpose |
-|-------|------|---------|
-| SCRFD (det_10g) | 16 MB | Face detection |
-| ArcFace (w600k_r50) | 166 MB | Face recognition |
-| GenderAge | 1.3 MB | Demographics |
-| MiniFASNet | 2 MB | Passive liveness |
-| YOLOv8n | 12 MB | Person detection |
-| Face Mesh | 2.8 MB | Active liveness landmarks |
+See [docs/versioning.md](docs/versioning.md) for the full versioning strategy.
 
 ## License
 

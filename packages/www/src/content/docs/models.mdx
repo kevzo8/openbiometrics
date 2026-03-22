@@ -1,0 +1,113 @@
+---
+title: Models & Licensing
+description: Open-source models, model tiers, and licensing for OpenBiometrics
+---
+
+OpenBiometrics ships with **fully open-source models by default**. No commercial restrictions, no API keys required.
+
+## Default Models (Community Tier)
+
+| Model | License | Size | Purpose | Accuracy |
+|-------|---------|------|---------|----------|
+| YuNet | MIT | 0.3 MB | Face detection | 0.88 AP (WIDER Face) |
+| SFace | Apache 2.0 | 37 MB | Face recognition | 99.4% LFW |
+| ViT GenderAge | Apache 2.0 | 330 MB | Age & gender estimation | 94.3% gender, 4.5yr age MAE |
+| MiniFASNet | Apache 2.0 | 2 MB | Passive liveness (anti-spoofing) | ~98% |
+| YOLOv8n | AGPL-3.0 | 12 MB | Person detection | — |
+| MediaPipe Face Mesh | Apache 2.0 | 2.8 MB | 468-point landmarks (active liveness) | — |
+
+## Model Tiers
+
+OpenBiometrics supports three tiers of models. You can mix and match:
+
+### Community (default)
+Fully open-source models with permissive licenses (MIT, Apache 2.0). Free for commercial use. No restrictions. This is what you get out of the box.
+
+### Premium
+Highest-accuracy models from partner providers. Requires a license key. These models may be proprietary but run on the same OpenBiometrics platform. Partners can register their NIST-ranked algorithms and serve them through the standard API.
+
+### Legacy
+InsightFace models (SCRFD, ArcFace, GenderAge) with non-commercial licenses. Kept for backward compatibility. If you need these for production, contact InsightFace for a commercial license.
+
+## Checking Your Models
+
+Every API response includes the `X-OpenBiometrics-Version` header. For detailed model info:
+
+```bash
+curl http://localhost:8000/api/v1/admin/health
+```
+
+```json
+{
+  "version": "0.3.0",
+  "healthy": true,
+  "models": {
+    "detector": {"name": "yunet", "tier": "community", "license": "MIT"},
+    "recognizer": {"name": "sface", "tier": "community", "license": "Apache-2.0"},
+    "demographics": {"name": "vit_genderage", "tier": "community", "license": "Apache-2.0"},
+    "liveness": {"name": "antispoofing", "tier": "community", "license": "Apache-2.0"}
+  },
+  "modules": { ... }
+}
+```
+
+## Choosing Models
+
+Specify models in your configuration:
+
+```python
+from openbiometrics import BiometricConfig, FaceConfig
+
+# Auto (default) — picks best available, prefers community
+config = BiometricConfig(face=FaceConfig(detector="auto", recognizer="auto"))
+
+# Explicit community models
+config = BiometricConfig(face=FaceConfig(detector="yunet", recognizer="sface"))
+
+# Legacy InsightFace models (non-commercial, higher accuracy)
+config = BiometricConfig(face=FaceConfig(detector="det_10g", recognizer="w600k_r50"))
+```
+
+## Downloading Models
+
+```bash
+# Download community models (default)
+python download_models.py --module face
+
+# Download all modules
+python download_models.py --module all
+```
+
+## Comparison: OpenBiometrics vs Cloud APIs
+
+| | OpenBiometrics | AWS Rekognition | Azure Face | Luxand |
+|---|---|---|---|---|
+| Self-hosted | Yes | No | No | No |
+| Air-gapped / offline | Yes | No | No | No |
+| Edge / Jetson | Yes | No | No | No |
+| Open source | Yes | No | No | No |
+| See the models | Yes | No | No | No |
+| Data sovereignty | Full | AWS region | Azure region | Luxand cloud |
+| Free tier | Unlimited | 1K/mo (12mo) | 30K/mo | 1,500/mo |
+| Cost at 100K calls/mo | $0 | ~$100 | ~$100 | $99/mo |
+| Cost at 1M calls/mo | $0 | ~$1,000 | ~$1,000 | ~$1,949/mo |
+
+## Registering Custom Models
+
+Partners and enterprises can register their own models:
+
+```python
+from openbiometrics.runtime.registry import ModelRegistry, ModelInfo, ModelTier
+
+registry = ModelRegistry(models_dir="./models")
+registry.register(ModelInfo(
+    name="my_detector",
+    filename="my_detector.onnx",
+    url="https://models.mycompany.com/detector.onnx",
+    description="Custom high-accuracy face detector",
+    size_mb=50.0,
+    tier=ModelTier.PREMIUM,
+    license="Commercial",
+    role="detector",
+))
+```
