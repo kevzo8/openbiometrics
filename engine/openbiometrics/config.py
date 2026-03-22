@@ -119,16 +119,53 @@ class IdentityConfig:
 
 
 @dataclass
+class CloudProviderConfig:
+    """Configuration for a cloud face processing provider.
+
+    When enabled, face detection and comparison can be proxied to cloud APIs.
+    Local ONNX models are still used for features the cloud provider doesn't support.
+
+    Usage:
+        CloudProviderConfig(name="aws", region="us-east-1")
+        CloudProviderConfig(name="azure", endpoint="https://...", api_key="...")
+        CloudProviderConfig(name="google", api_key="...")
+    """
+
+    name: str = ""  # "" = disabled (use local models), "aws", "azure", "google"
+    # AWS
+    region: str = "us-east-1"
+    access_key: str = ""
+    secret_key: str = ""
+    # Azure
+    endpoint: str = ""
+    api_key: str = ""
+    # Google
+    # (uses api_key above)
+
+
+@dataclass
 class BiometricConfig:
     """Top-level configuration for the OpenBiometrics engine.
 
     Groups subsection configs for each processing module.
 
     Usage:
+        # Local models (default)
+        config = BiometricConfig(face=FaceConfig(ctx_id=-1))
+
+        # Cloud provider (AWS)
         config = BiometricConfig(
-            face=FaceConfig(ctx_id=0, enable_liveness=True),
+            cloud=CloudProviderConfig(name="aws", region="us-east-1"),
         )
-        kernel = BiometricKernel(config)
+
+        # Cloud provider (Azure)
+        config = BiometricConfig(
+            cloud=CloudProviderConfig(
+                name="azure",
+                endpoint="https://your-resource.cognitiveservices.azure.com",
+                api_key="your-key",
+            ),
+        )
     """
 
     face: FaceConfig = field(default_factory=FaceConfig)
@@ -138,3 +175,4 @@ class BiometricConfig:
     video: VideoConfig = field(default_factory=VideoConfig)
     events: EventsConfig = field(default_factory=EventsConfig)
     identity: IdentityConfig = field(default_factory=IdentityConfig)
+    cloud: CloudProviderConfig = field(default_factory=CloudProviderConfig)

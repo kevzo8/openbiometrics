@@ -13,6 +13,7 @@ from app.routes.liveness import router as liveness_router
 from app.routes.video import router as video_router
 from app.routes.events import router as events_router
 from app.routes.admin import router as admin_router
+from app.routes.providers import router as providers_router
 
 router = APIRouter()
 
@@ -23,3 +24,4 @@ router.include_router(liveness_router, prefix="/liveness", tags=["liveness"])
 router.include_router(video_router, prefix="/video", tags=["video"])
 router.include_router(events_router, prefix="/events", tags=["events"])
 router.include_router(admin_router, prefix="/admin", tags=["admin"])
+router.include_router(providers_router, prefix="/providers", tags=["providers"])
