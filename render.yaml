@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: openbiometrics
+    runtime: image
+    repo: https://github.com/kevzo8/openbiometrics
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: 10000
