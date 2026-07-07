@@ -47,6 +47,10 @@ class PipelineConfig:
     enable_demographics: bool = True
     enable_quality: bool = True
     quality_gate: bool = False  # Skip recognition if quality fails
+    detector: str = "auto"
+    recognizer: str = "auto"
+    demographics_model: str = "auto"
+    liveness_model: str = "auto"
 
 
 class FacePipeline:
