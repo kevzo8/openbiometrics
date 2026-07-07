@@ -36,33 +36,22 @@ DASHBOARD_DIR = Path(__file__).parent.parent.parent / "packages" / "dashboard" /
 async def lifespan(app: FastAPI):
     models_dir = str(Path(__file__).parent.parent.parent / "engine" / "models")
 
+    # Use InsightFace model directory directly (downloaded at build time)
+    insightface_dir = str(Path.home() / ".insightface" / "models" / "buffalo_l")
+
     config = BiometricConfig(
         face=FaceConfig(
-            models_dir=models_dir,
-            ctx_id=-1,  # CPU on Mac, set to 0 for GPU
+            models_dir=insightface_dir,
+            ctx_id=-1,  # CPU
+            enable_demographics=False,
+            enable_quality=False,
         ),
-        document=DocumentConfig(
-            enabled=True,
-            models_dir=models_dir,
-        ),
-        liveness=LivenessConfig(
-            enabled=True,
-        ),
-        person=PersonConfig(
-            enabled=True,
-            models_dir=models_dir,
-        ),
-        video=VideoConfig(
-            enabled=True,
-        ),
-        events=EventsConfig(
-            enabled=True,
-            webhooks_enabled=True,
-        ),
-        identity=IdentityConfig(
-            enabled=True,
-            watchlist_dir="./watchlists",
-        ),
+        document=DocumentConfig(enabled=False),
+        liveness=LivenessConfig(enabled=True),
+        person=PersonConfig(enabled=False),
+        video=VideoConfig(enabled=False),
+        events=EventsConfig(enabled=False),
+        identity=IdentityConfig(enabled=False),
     )
 
     deps.init_services(config)
