@@ -20,4 +20,5 @@ RUN python -c "from insightface.app import FaceAnalysis; app = FaceAnalysis(name
 
 EXPOSE 8000
 
+WORKDIR /app/api
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "10000"]
