@@ -12,8 +12,8 @@ COPY . /app
 RUN rm -rf /app/packages /app/docs /app/sdks /app/tests /app/scripts /app/.github
 
 # Install engine with our pyproject.toml fix (version hardcoded)
-RUN pip install --no-cache-dir -e /app/engine && \
-    pip install --no-cache-dir fastapi uvicorn python-multipart "opencv-python-headless>=4.10"
+RUN pip install --no-cache-dir -e "/app/engine[legacy]" && \
+    pip install --no-cache-dir fastapi uvicorn python-multipart
 
 # Download InsightFace models at build time
 RUN python -c "from insightface.app import FaceAnalysis; app = FaceAnalysis(name='buffalo_l', providers=['CPUExecutionProvider']); app.prepare(ctx_id=-1, det_size=(640, 640))"
